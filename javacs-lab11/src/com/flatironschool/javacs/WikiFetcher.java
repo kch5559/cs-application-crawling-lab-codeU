@@ -46,6 +46,7 @@ public class WikiFetcher {
 	 * @throws IOException
 	 */
 	public Elements readWikipedia(String url) throws IOException {
+
 		URL realURL = new URL(url);
 
 		// assemble the file name

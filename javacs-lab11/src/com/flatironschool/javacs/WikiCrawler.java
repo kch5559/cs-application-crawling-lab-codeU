@@ -1,12 +1,12 @@
 package com.flatironschool.javacs;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Queue;
 
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import redis.clients.jedis.Jedis;
@@ -48,16 +48,60 @@ public class WikiCrawler {
 
 	/**
 	 * Gets a URL from the queue and indexes it.
-	 * @param b 
+	 * @param boolean
 	 * 
 	 * @return Number of pages indexed.
 	 * @throws IOException
 	 */
 	public String crawl(boolean testing) throws IOException {
+
         // FILL THIS IN!
-		return null;
+		if(queue.isEmpty()) return null;
+
+		String url = queue.poll();
+		Elements contents ;
+
+		if(testing) {
+			//read the contents of the page using wikifetcher.readwikipedia
+			contents = wf.readWikipedia(url);
+		}else {
+
+			if (index.isIndexed(url)) {
+				System.out.println("Already indexed");
+				return null;
+			} else {
+				contents = wf.fetchWikipedia(url);
+			}
+
+		}
+
+		index.indexPage(url, contents);
+		queueInternalLinks(contents);
+
+		return url;
 	}
-	
+
+
+	private static void fillQueue(Queue<String> queue, Element paragraph) {
+
+		Elements elets = paragraph.select("a[href]");
+
+		for(Element elem : elets) {
+
+			if (elem.hasAttr("href")) {
+
+				String newURL = elem.attr("href");
+				if(newURL.startsWith("/wiki/")) {
+					String addedURL = "https://en.wikipedia.org" + newURL;
+					queue.add(addedURL);
+				}
+
+			}
+		}
+	}
+
+
+
 	/**
 	 * Parses paragraphs and adds internal links to the queue.
 	 * 
@@ -66,6 +110,9 @@ public class WikiCrawler {
 	// NOTE: absence of access level modifier means package-level
 	void queueInternalLinks(Elements paragraphs) {
         // FILL THIS IN!
+		for(Element paragraph : paragraphs) {
+			fillQueue(queue, paragraph);
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
